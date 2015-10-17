@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DroidSeries</string>
+    <string name="app_title">Droid Series</string>
+    <string name="lblIncEpisode">Increment episode</string>
+    <string name="lblIncSeason">Increment season</string>
+    <string name="lblAddSerie">Add serie</string>
+</resources>
