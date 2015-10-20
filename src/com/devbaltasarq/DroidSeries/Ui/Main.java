@@ -2,16 +2,25 @@ package com.devbaltasarq.DroidSeries.Ui;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.*;
+import android.view.ContextMenu;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
 import android.widget.*;
 import com.devbaltasarq.DroidSeries.Core.Serie;
 import com.devbaltasarq.DroidSeries.R;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 public class Main extends Activity {
+    public static final String EtqPrefsSeries = "SERIES";
+
     /**
      * Called when the activity is first created.
      */
@@ -19,8 +28,6 @@ public class Main extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate( savedInstanceState );
         setContentView( R.layout.main );
-
-        this.listSeries = new ArrayList<>();
 
         // Button "add"
         Button btAdd = (Button) this.findViewById( R.id.btAdd );
@@ -32,6 +39,7 @@ public class Main extends Activity {
         });
 
         // Create list view
+        this.listSeries = new ArrayList<>();
         ListView lvSeries = (ListView) this.findViewById( R.id.lvSeries );
         lvSeries.setLongClickable( true );
         this.laSeries = new ArrayAdapter<Serie>(
@@ -44,8 +52,70 @@ public class Main extends Activity {
         this.registerForContextMenu( lvSeries );
     }
 
+    private void saveSate() {
+        SharedPreferences.Editor editor = this.getPreferences( Context.MODE_PRIVATE ).edit();
+        Set<String> series = new HashSet<>();
+
+        editor.clear();
+        for( Serie serie: this.listSeries ) {
+            series.add( serie.getName() );
+            System.out.println( "Stored serie: " + serie.getName()  );
+        }
+
+        // Write settings
+        editor.putStringSet( EtqPrefsSeries, series );
+        System.out.println( "Saved: " + series.toString() );
+
+        for( Serie serie: this.listSeries ) {
+            editor.putInt( serie.getId(), serie.getCodedEpisode() );
+            System.out.println( "Saved serie: " + serie.getName() + ": " + serie.getId() );
+        }
+
+        editor.apply();
+        System.out.println( "Saved state..." );
+    }
+
+    private void loadState() {
+        Set<String> series;
+        SharedPreferences prefs = this.getPreferences( Context.MODE_PRIVATE );
+
+        // Retrieve series names
+        this.listSeries.clear();
+        series = prefs.getStringSet( EtqPrefsSeries, new HashSet<String>()  );
+        System.out.println( "Loaded: " + series.toString() );
+
+        for(String serieName: series) {
+            this.listSeries.add( new Serie( serieName ) );
+        }
+
+        // Retrieve last episode for each serie
+        for(Serie serie: this.listSeries) {
+            serie.setCodedEpisode( prefs.getInt( serie.getId(), 1001 ) );
+            System.out.println( "Retrieved serie: " + serie.getName() );
+        }
+
+        series.clear();
+        this.laSeries.notifyDataSetChanged();
+        System.out.println( "Loaded state..." );
+    }
+
+    @Override
+    public void onStop()
+    {
+        super.onStop();
+        this.saveSate();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        this.loadState();
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+        super.onCreateOptionsMenu( menu );
+
         this.getMenuInflater().inflate( R.menu.main_menu, menu );
         return true;
     }
