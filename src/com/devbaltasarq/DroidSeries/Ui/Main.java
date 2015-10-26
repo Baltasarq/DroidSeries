@@ -4,8 +4,8 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -14,12 +14,12 @@ import android.widget.*;
 import com.devbaltasarq.DroidSeries.Core.Serie;
 import com.devbaltasarq.DroidSeries.R;
 
+import java.io.*;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
 
 public class Main extends Activity {
-    public static final String EtqPrefsSeries = "SERIES";
+    public static final String EtqApp = "droidseries";
+    public static final String CfgFileName = "droidseries.cfg";
 
     /**
      * Called when the activity is first created.
@@ -53,6 +53,24 @@ public class Main extends Activity {
     }
 
     private void saveSate() {
+        try (FileOutputStream f = this.openFileOutput( CfgFileName, Context.MODE_PRIVATE ) )
+        {
+            PrintStream cfg = new PrintStream( f );
+
+            for(Serie serie: this.listSeries) {
+                cfg.println( serie.getName() );
+                cfg.println( serie.getLastSeason() );
+                cfg.println( serie.getLastEpisode() );
+            }
+
+            cfg.close();
+        }
+        catch(IOException exc) {
+            Log.e( EtqApp, "Error saving state" );
+        }
+
+
+        /*
         SharedPreferences.Editor editor = this.getPreferences( Context.MODE_PRIVATE ).edit();
         Set<String> series = new HashSet<>();
 
@@ -72,10 +90,36 @@ public class Main extends Activity {
         }
 
         editor.apply();
+        */
+
         System.out.println( "Saved state..." );
     }
 
     private void loadState() {
+        try (FileInputStream f = this.openFileInput( CfgFileName  ) )
+        {
+            BufferedReader cfg = new BufferedReader( new InputStreamReader( f ) );
+
+            this.listSeries.clear();
+            String line = cfg.readLine();
+            while( line != null ) {
+                Serie serie = new Serie( line );
+                serie.setLastSeason( Integer.parseInt( cfg.readLine() ) );
+                serie.setLastEpisode( Integer.parseInt( cfg.readLine() ) );
+                this.listSeries.add( serie  );
+
+                line = cfg.readLine();
+            }
+
+            cfg.close();
+        }
+        catch (IOException exc)
+        {
+            Log.e( EtqApp, "Error loading state" );
+        }
+
+
+        /*
         Set<String> series;
         SharedPreferences prefs = this.getPreferences( Context.MODE_PRIVATE );
 
@@ -96,6 +140,8 @@ public class Main extends Activity {
 
         series.clear();
         this.laSeries.notifyDataSetChanged();
+        */
+
         System.out.println( "Loaded state..." );
     }
 
